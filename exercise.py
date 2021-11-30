@@ -56,16 +56,16 @@ def macd(prices, window_short=12, window_long=26):
     The expected output is in the output.csv file
     """
     def get_SMA(price,N):
-    sma=prices['price'].rolling(window=N).mean()
-    list_sma=[]
-    for i in sma:
-        list_sma.append(i)
-    return list_sma
+        sma=prices['SX5T Index'].rolling(window=N).mean()
+        list_sma=[]
+        for i in sma:
+            list_sma.append(i)
+        return list_sma
 
     def get_MACD(prices, short=12, long=26, M=9):    
-    a=get_SMA(prices, window_short)
-    b=get_SMA(prices, window_long)
-    prices['macd_12_26']=pd.Series(a)-pd.Series(b)    
+        a=get_SMA(prices, window_short)
+        b=get_SMA(prices, window_long)
+        prices['macd_12_26']=pd.Series(a)-pd.Series(b)    
     pass
 
 
@@ -76,13 +76,15 @@ def sortino_ratio(prices):
     Assume risk-free rate = 0
     On the given test set, it should yield 0.05457
     """
-    prices["daily_return"]=prices["price"].pct_change()
-    return_dd=np.prod(prices['daily_return']+1)-1
+    prices["daily_return"]=prices["SX5T Index"].pct_change()
+    return_dd=prices["daily_return"].mean()*len(prices)
     prices['dd']=prices[prices['daily_return'] <0] ['daily_return']
     dd_new=df.dd.std()*np.sqrt(len(price))
     sortino_ratio=return_dd/dd_new
     return sortion_ratio
     
+    # i double check my function but i dont understand why i have the different 
+    # answer from the reuslut ,i have 1.0161476208210756 the result
     pass
 
 
@@ -93,8 +95,14 @@ def expected_shortfall(prices, level=0.95):
     On the given test set, it should yield -0.03468
     """
     
-    #sorry i dont know how to calculate es
-    
+    prices["daily_return"]=prices["SX5T Index"].pct_change()
+    def value_at_risk(returns, confidence_level=.05):
+        return returns.quantile(confidence_level, interpolation='higher')
+    def expected_shortfall(returns, confidence_level=.05):
+        var = value_at_risk(returns, confidence_level)
+        return returns[returns.lt(var)].mean()
+    es=expected_shortfall(df['daily_return'])
+    return es
     pass
 
 
@@ -106,10 +114,13 @@ def visualize(prices, path):
     Code a function that takes a DataFrame named prices and
     saves the plot to the given path
     """
-    plt.plot(pricesf['year'],df['SX5T Index'].rolling(window=12).mean(),label="Sma_12")
-    plt.plot(prices['year'],df['SX5T Index'].rolling(window=26).mean(),'r',label="sma_26")
+    prices['date'] = pd.to_datetime(prices['date'])
+    prices["daily_return"]=prices["SX5T Index"].pct_change()
+    plt.figure(figsize=(10,10))
+    plt.plot(prices['date'],prices['daily_return'].rolling(window=12).mean(),label="Sma_12")
+    plt.plot(prices['date'],prices['daily_return'].rolling(window=26).mean(),'r',label="sma_26")
     plt.legend()
-    plt.savefig(path,'power.png', dpi=75)
+    plt.savefig(path,'macd.png', dpi=75)
     plt.show()
     
     pass
